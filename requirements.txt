@@ -1,0 +1,12 @@
+# Ingestion
+requests==2.34.2
+kafka-python==3.0.12
+
+# Stream processing
+pyspark==3.5.3
+
+# Data lake sync
+google-cloud-storage==3.17.1
+
+# Reference data (dbt/seeds/airports_filter.py)
+pandas

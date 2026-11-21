@@ -1,0 +1,32 @@
+name: 'opensky_data_pipeline'
+version: '1.0.0'
+config-version: 2
+
+profile: 'default'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  opensky_data_pipeline:
+    +materialized: table
+
+seeds:
+  opensky_data_pipeline:
+    ref_airports:
+      +column_types:
+        ident: string
+        name: string
+        elevation_ft: float64
+        latitude_deg: float64
+        longitude_deg: float64
+        iso_country: string
