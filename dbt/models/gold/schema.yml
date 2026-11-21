@@ -20,17 +20,22 @@ models:
               field: flight_id
 
   - name: gold_anomalous_flights
-    description: Aircraft above commercial speed or altitude limits.
+    description: Aircraft-days above 380 m/s or 16,000 m, split into sustained readings and isolated spikes.
+    tests:
+      - unique:
+          column_name: "CONCAT(flight_id, '|', CAST(ingestion_date AS STRING))"
     columns:
       - name: flight_id
         tests:
-          - unique
           - not_null
+          - relationships:
+              to: ref('gold_dim_aircraft')
+              field: flight_id
       - name: anomaly_reason
         tests:
           - accepted_values:
               values:
-                - 'Above commercial speed and altitude'
-                - 'Above commercial speed'
-                - 'Above commercial altitude'
-                - 'Possible sensor noise'
+                - 'Sustained high speed and altitude'
+                - 'Sustained high speed'
+                - 'Sustained high altitude'
+                - 'Isolated spike'
