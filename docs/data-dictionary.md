@@ -91,10 +91,20 @@ One row per aircraft per day.
 | `max_altitude` | float | Highest barometric altitude, metres |
 
 ### `gold_anomalous_flights`
-Aircraft whose maximum speed exceeds 300 m/s or whose maximum altitude exceeds 13,000 m.
+One row per aircraft per day with at least one reading above 380 m/s or 16,000 m. Rules in [`gold-layer.md`](gold-layer.md).
 
 | Column | Type | Description |
 |---|---|---|
+| `flight_id` | string | References `gold_dim_aircraft` |
+| `ingestion_date` | date | Day |
+| `total_pings` | int | Readings that day |
+| `high_speed_pings` | int | Readings above 380 m/s |
+| `high_altitude_pings` | int | Readings above 16,000 m |
+| `max_velocity` | float | Highest ground speed, m/s |
+| `max_altitude` | float | Highest barometric altitude, m |
+| `anomaly_reason` | string | Sustained high speed and/or altitude, or isolated spike |
+
+---|---|---|
 | `flight_id` | string | References `gold_dim_aircraft` |
 | `max_velocity` | float | Highest ground speed observed, m/s |
 | `max_altitude` | float | Highest barometric altitude observed, metres |

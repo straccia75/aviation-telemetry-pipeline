@@ -63,7 +63,7 @@ flowchart LR
 - **Gold** is a star schema:
   - `gold_dim_aircraft`: one row per aircraft with its latest attributes (SCD Type 1, deduplicated with `QUALIFY ROW_NUMBER()`).
   - `gold_daily_flight_metrics`: daily fact table per aircraft (ping count, max velocity, max altitude).
-  - `gold_anomalous_flights`: aircraft above typical commercial speed or altitude.
+  - `gold_anomalous_flights`: aircraft-days above 380 m/s or 16,000 m, split into sustained readings (2 or more) and isolated spikes (likely sensor noise).
 - Data quality tests run on Silver (coordinates, speeds, altitudes, ground reports) and on Gold (keys, relationships, accepted values).
 
 See [`docs/data-dictionary.md`](docs/data-dictionary.md) for the column-level schema of every layer and [`docs/gold-layer.md`](docs/gold-layer.md) for the Gold rules.
@@ -90,6 +90,7 @@ Airports without a known elevation are kept, and the altitude check is skipped f
 | Redpanda instead of Apache Kafka | Same Kafka API, a single container, no ZooKeeper. Suitable for a single-node setup. |
 | Hive partitioning by ingestion date | Date-based pruning in Spark, GCS and BigQuery, and cheap reprocessing of a single day. |
 | Incremental Silver with `insert_overwrite` | Events have no unique key, so whole day partitions are replaced. Re-runs are safe and late data from the previous day is picked up. |
+| Anomalies need 2 or more readings in a day | A single reading above a limit is usually sensor noise. Counting readings works the same at any polling frequency. |
 | Defensive casting (`SAFE_CAST`) in the warehouse | Malformed sensor values become `NULL` instead of failing the pipeline. |
 | Star schema in Gold | Static attributes are stored once in a dimension, so fact tables stay narrow and scan less data in BigQuery. |
 | Ground altitude checked against the nearest airport | A fixed threshold flags every aircraft parked at a high-elevation airport. Comparing with the real airport elevation (within 5 km, 300 m tolerance for pressure variation) removes those false positives. |

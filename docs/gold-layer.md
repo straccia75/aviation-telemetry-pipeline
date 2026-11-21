@@ -8,7 +8,7 @@ Models are in `dbt/models/gold/`. Tests are in `dbt/models/gold/schema.yml`.
 
 - **Star schema.** Call sign and country are stored once per aircraft in the dimension table. The fact tables keep only `flight_id` and metrics, so they stay small and cheaper to scan.
 - **Latest state per aircraft.** Call signs can change during a flight. The dimension keeps the most recent record per aircraft using `QUALIFY ROW_NUMBER()` (SCD Type 1).
-- **Tolerance band for anomalies.** Sensor readings are noisy, so values slightly above the limits are labelled as possible noise and not as real anomalies.
+- **Isolated spikes vs sustained readings.** Sensor readings are noisy. A single reading above a limit in a day is labelled as an isolated spike. Two or more readings from the same aircraft on the same day count as sustained. This works the same whether the producer polls every minute or every 15 minutes.
 - **Rebuildable.** Every model is a full rebuild from Silver. Running `dbt run` again gives the same result.
 
 ## Models
@@ -38,15 +38,28 @@ One row per aircraft per day.
 Tests: `flight_id` not null and present in `gold_dim_aircraft`.
 
 ### `gold_anomalous_flights`
-Aircraft whose maximum speed is above 300 m/s or maximum altitude above 13,000 m.
+One row per aircraft per day with at least one reading above 380 m/s ground speed or 16,000 m altitude.
+
+Both limits sit above normal civil traffic: airliners with a strong jet-stream tailwind reach about 370 m/s ground speed, and business jets fly up to about 15,500 m.
+
+| Column | Description |
+|---|---|
+| `flight_id` | References `gold_dim_aircraft` |
+| `ingestion_date` | Day |
+| `total_pings` | Readings received that day |
+| `high_speed_pings` | Readings above 380 m/s |
+| `high_altitude_pings` | Readings above 16,000 m |
+| `max_velocity` | Highest ground speed, m/s |
+| `max_altitude` | Highest barometric altitude, m |
+| `anomaly_reason` | Classification, see below |
 
 | `anomaly_reason` | Rule |
 |---|---|
-| Above commercial speed and altitude | speed > 330 m/s and altitude > 13,300 m |
-| Above commercial speed | speed > 330 m/s |
-| Above commercial altitude | altitude > 13,300 m |
-| Possible sensor noise | above 300 m/s or 13,000 m, but within the tolerance band |
+| Sustained high speed and altitude | 2 or more readings above both limits |
+| Sustained high speed | 2 or more readings above 380 m/s |
+| Sustained high altitude | 2 or more readings above 16,000 m |
+| Isolated spike | only 1 reading above a limit, likely sensor noise |
 
-Speed is ground speed, so strong tailwinds can push commercial aircraft above the limit. The table flags flights for review. It does not identify aircraft type.
+The table flags aircraft for review. It does not identify the aircraft type.
 
-Tests: `flight_id` unique and not null, `anomaly_reason` limited to the four values above.
+Tests: one row per aircraft and day, `flight_id` not null and present in `gold_dim_aircraft`, `anomaly_reason` limited to the four values above.
