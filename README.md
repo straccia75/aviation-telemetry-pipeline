@@ -71,7 +71,11 @@ See [`docs/data-dictionary.md`](docs/data-dictionary.md) for the column-level sc
 ### 5. Reference data: airports
 The quality tests compare aircraft reported on the ground with the elevation of the nearest airport. The airport list comes from [OurAirports](https://ourairports.com/data/) (`airports.csv`, public domain).
 
-`dbt/seeds/airports_filter.py` reduces the original file (about 86,000 rows) to the 5,282 large and medium airports and keeps only the columns the tests need. The result, `ref_airports.csv`, is loaded into BigQuery with `dbt seed`. The original file is not stored in the repository; download it from the link above to rebuild the seed.
+`dbt/seeds/airports_filter.py` reduces the original file (about 86,000 rows) to the 5,282 large and medium airports and keeps only the columns the tests need. The result, `ref_airports.csv`, is loaded into BigQuery with `dbt seed`. The original file (12 MB) is kept locally in `dbt/data/raw/airports_info.csv` and excluded from version control. To rebuild the seed, download `airports.csv` from the link above, save it at that path and run the script from the project root:
+
+```bash
+python dbt/seeds/airports_filter.py
+```
 
 Airports without a known elevation are kept, and the altitude check is skipped for them.
 
